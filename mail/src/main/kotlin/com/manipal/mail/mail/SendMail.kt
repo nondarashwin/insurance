@@ -1,18 +1,27 @@
 package com.manipal.mail.mail
 
 
+import com.manipal.mail.route.Route
 import es.atrujillo.mjml.service.auth.MjmlAuth
 import es.atrujillo.mjml.service.auth.MjmlAuthFactory
 import es.atrujillo.mjml.service.definition.MjmlService
 import es.atrujillo.mjml.service.impl.MjmlRestService
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.PropertySource
+import org.springframework.core.env.Environment
+import org.springframework.stereotype.Component
 import javax.mail.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 
+@Component
 
 class SendMail {
+    @Autowired
+    var env:Environment?=null
 
     fun sendMail(to: List<String>, subjects: String, messages: String) {
+
         if (to.isNotEmpty()) {
             Transport.send(plainMail(to, subjects, mjml(messages)))
         }
@@ -35,22 +44,22 @@ class SendMail {
     private fun plainMail(tos: List<String>, subjects: String, messages: String): MimeMessage {
 
 
-        val from = "ibazaar40@gmail.com"
-        val pass = "ngywfns67"
+        val from =env?.getProperty("spring.mail.username")
+        val pass =env?.getProperty("spring.mail.password")
         val encryption = Encryption()
         val properties = System.getProperties()
 
         with(properties) {
-            put("mail.smtp.host", "smtp.gmail.com")
-            put("mail.smtp.port", "465")
-            put("mail.smtp.auth", "true")
-            put("mail.smtp.socketFactory.port", "465")
-            put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory")
+            put("mail.smtp.host", env?.getProperty("spring.mail.host"))
+            put("mail.smtp.port", env?.getProperty("spring.mail.port"))
+            put("mail.smtp.auth", env?.getProperty("spring.mail.properties.smtp.auth"))
+            put("mail.smtp.socketFactory.port",env?.getProperty("spring.mail.properties.smtp.socketFactory.port") )
+            put("mail.smtp.socketFactory.class", env?.getProperty("spring.mail.properties.smtp.socketFactory.class"))
         }
 
         val auth = object : Authenticator() {
             override fun getPasswordAuthentication() =
-                    PasswordAuthentication(from, encryption.decrypt(pass))
+                    PasswordAuthentication(from, pass?.let { encryption.decrypt(it) })
         }
 
         val session = Session.getDefaultInstance(properties, auth)

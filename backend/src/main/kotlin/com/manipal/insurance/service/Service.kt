@@ -37,8 +37,10 @@ class Service {
     @Autowired
     private val kafkaTemplate: KafkaTemplate<String, String>? = null
     var dao: Dao? = mongoTemplate?.let { Dao(it) }
-
-
+    val insuranceDB="InsuranceConfig"
+    val partnersDB="PartnersConfig"
+    val paymentsDB="Payments"
+    val quotesDB="Quotes"
     fun findUniqueCategory(): List<Document>? {
         if (mongoTemplate != null) {
             dao = mongoTemplate?.let { Dao(it) }
@@ -49,7 +51,7 @@ class Service {
         fields["product"] = 1
         fields["info"] = 1
         fields["image"] = 1
-        return dao?.findFields("formConfig", fields)
+        return dao?.findFields(insuranceDB, fields)
 
     }
 
@@ -60,8 +62,8 @@ class Service {
         val query = Document()
         query["category"] = category
         query["product"] = product
-        dao?.delete("formConfig", query)
-        dao?.delete("partners", query)
+        dao?.delete(insuranceDB, query)
+        dao?.delete(partnersDB, query)
         return "successful"
     }
 
@@ -70,7 +72,7 @@ class Service {
             dao = mongoTemplate?.let { Dao(it) }
         }
         val paidQuery = "{\n" +
-                "        aggregate: \"payment\",\n" +
+                "        aggregate: \"Payments\",\n" +
                 "        pipeline: [\n" +
                 "\n" +
                 "            {\n" +
@@ -100,11 +102,11 @@ class Service {
         val paidMembers = dao?.executeCommand(paidQuery)
         val paidData = JSONObject(paidMembers?.toJson()).getJSONObject("cursor").getJSONArray("firstBatch")
         val nonPaidQuery = "{\n" +
-                "    aggregate: \"quotes\",\n" +
+                "    aggregate: \"Quotes\",\n" +
                 "    pipeline: [\n" +
                 "        {\n" +
                 "            \"\$lookup\": {\n" +
-                "                \"from\": \"payment\",\n" +
+                "                \"from\": \"Payments\",\n" +
                 "                \"localField\": \"category\",\n" +
                 "                \"foreignField\": \"category\",\n" +
                 "                \"as\": \"category\"\n" +
@@ -112,7 +114,7 @@ class Service {
                 "            ,\n" +
                 "\n" +
                 "            \"\$lookup\": {\n" +
-                "                \"from\": \"payment\",\n" +
+                "                \"from\": \"Payments\",\n" +
                 "                \"localField\": \"product\",\n" +
                 "                \"foreignField\": \"product\",\n" +
                 "                \"as\": \"product\"\n" +
@@ -122,7 +124,7 @@ class Service {
                 "                \"localField\": \"formData.email\",\n" +
                 "                \"as\": \"email\",\n" +
                 "                \"foreignField\": \"email\",\n" +
-                "                \"from\": \"payment\"\n" +
+                "                \"from\": \"Payments\"\n" +
                 "            }\n" +
                 "        },\n" +
                 "        {\n" +
@@ -180,7 +182,7 @@ class Service {
         project["count"] = 1
         list.add(Aggregates.project(project))
         val result = JSONArray()
-        val dbOutput = dao?.aggregate("payment", list)
+        val dbOutput = dao?.aggregate(paymentsDB, list)
         if (dbOutput != null) {
             for (output in dbOutput) {
                 print(output)
@@ -226,21 +228,21 @@ class Service {
         query["category"] = jsonData.getString("category")
         query["product"] = jsonData.getString("product")
         query["partner"] = jsonData.getString("partner")
-        val partners = dao?.find("partners", query)
+        val partners = dao?.find(partnersDB, query)
         var flag = true
         if (partners != null) {
             if (partners.isNotEmpty()) {
                 flag = false
                 val dat = partners[0]
                 jsonData.put("_id", dat["_id"])
-                partners[0].let { dao?.delete("partners", it) }
+                partners[0].let { dao?.delete(partnersDB, it) }
             }
 
         }
         if (flag) {
             kafkaTemplate?.send("pipe", "partner,$jsonData")
         }
-        dao?.insert("partners", Document.parse(jsonData.toString()))
+        dao?.insert(partnersDB, Document.parse(jsonData.toString()))
     }
 
     fun findFormConfig(category: String, product: String): List<Document>? {
@@ -250,7 +252,7 @@ class Service {
         val query = Document()
         query["category"] = category
         query["product"] = product
-        var result=dao?.find("formConfig", query)
+        var result=dao?.find(insuranceDB, query)
         if(result==null)
             return ArrayList<Document>()
         else
@@ -277,7 +279,7 @@ class Service {
 
         val quotes = ArrayList<Document>()
 
-        val partners = dao?.find("partners", query)
+        val partners = dao?.find(partnersDB, query)
         if (partners != null) {
             for (partner in partners) {
                 val curPartner = JSONObject(partner.toJson())
@@ -321,7 +323,7 @@ class Service {
         jsonData.put("quotes", dbQuotes)
         jsonData.put("time", Date())
         kafkaTemplate?.send("pipe", "quote,$jsonData")
-        dao?.insert("quotes", Document.parse(jsonData.toString()))
+        dao?.insert(quotesDB, Document.parse(jsonData.toString()))
         return quotes
     }
 
@@ -337,7 +339,7 @@ class Service {
         project["category"] = "\$_id"
         project["partnerCount"] = 1
         list.add(Aggregates.project(project))
-        return dao?.aggregate("partners", list)
+        return dao?.aggregate(partnersDB, list)
 
     }
 
@@ -352,7 +354,7 @@ class Service {
         project["partner"] = "\$_id"
         project["count"] = 1
         list.add(Aggregates.project(project))
-        return dao?.aggregate("partners", list)
+        return dao?.aggregate(partnersDB, list)
 
     }
 
@@ -367,7 +369,7 @@ class Service {
         project["category"] = "\$_id"
         project["count"] = 1
         list.add(Aggregates.project(project))
-        return dao?.aggregate("quotes", list)
+        return dao?.aggregate(quotesDB, list)
 
     }
 
@@ -473,7 +475,7 @@ class Service {
                 flag = false
                 val dat = configs[0]
                 jsonData.put("_id", dat["_id"])
-                configs[0].let { dao?.delete("formConfig", it) }
+                configs[0].let { dao?.delete(insuranceDB, it) }
             }
 
         }
@@ -483,7 +485,8 @@ class Service {
 
 
         val doc = Document.parse(jsonData.toString())
-        dao?.insert("formConfig", doc)
+        dao?.insert(insuranceDB, doc)
+        //dao?.insert(insuranceDB, doc)
         val headers = HttpHeaders()
         headers.add("Response-from", "ToDoController")
         return ResponseEntity<String?>(jsonData.toString(), headers, HttpStatus.OK)

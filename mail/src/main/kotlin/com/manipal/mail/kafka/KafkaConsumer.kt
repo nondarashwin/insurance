@@ -17,12 +17,13 @@ class KafkaConsumer {
     var mongoTemplate: MongoTemplate? = null
     var dao: Dao? = null
     var emailPattern = Regex("^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$")
-
+    @Autowired
+    val service:Route = Route()
     @KafkaListener(topics = ["pipe"], groupId = "mailer")
     fun consumer(messages: String) {
         dao = mongoTemplate?.let { Dao(it) }
 
-        val service = Route()
+
         val message = messages.split(",".toRegex(), 2).toTypedArray()
         println("TYPE" + message[0])
         if (message[0] == "insurance") {
@@ -66,7 +67,7 @@ class KafkaConsumer {
         project["_id"] = 0
         project["email"] = "\$_id"
         list.add(Aggregates.project(project))
-        val mails = dao?.aggregate("quotes", list)
+        val mails = dao?.aggregate("Quotes", list)
         print(mails)
         val mailList= ArrayList<String>()
         if (mails != null) {

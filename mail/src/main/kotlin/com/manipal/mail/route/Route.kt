@@ -2,10 +2,23 @@ package com.manipal.mail.route
 
 import com.manipal.mail.mail.SendMail
 import org.json.JSONObject
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.PropertySource
+import org.springframework.core.env.Environment
+import org.springframework.stereotype.Service
 
+
+@Service
+@PropertySource("classpath:application.properties")
 class Route {
+
+
+
+    @Autowired
     private var sendMail = SendMail()
     private var emailPattern = Regex("^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$")
+
     fun quoteMailer(data: String) {
 
         val jsonData = JSONObject(data)
