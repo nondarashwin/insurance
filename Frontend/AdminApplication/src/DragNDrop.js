@@ -41,6 +41,7 @@ const useStylesAccordion = makeStyles((theme) => ({
 }));
 
 toast.configure();
+
 function DragNDrop() {
   const classes = useStyles();
   const classesAccordion = useStylesAccordion();
@@ -90,7 +91,7 @@ function DragNDrop() {
   const sendConfigData = () => {
     typeof config !== "undefined" &&
       axios
-        .post("http://localhost:9090/api/configs", JSON.parse(config))
+        .post(`http://ibazzar.com/backend/api/configs`, JSON.parse(config))
         .then((response) => {
           console.log("Config Data Sent");
           console.log(response);
