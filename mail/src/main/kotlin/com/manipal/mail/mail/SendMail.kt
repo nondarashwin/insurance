@@ -29,12 +29,19 @@ class SendMail {
     }
 
     private fun mjml(mjmlTemplate: String): String {
+        var appId:String=""
+        var secretKey:String=""
+        if(env!=null){
+            appId= env?.getProperty("mjml.userid").toString()
+            secretKey=env?.getProperty("mjml.key").toString()
+        }
 
         val memoryAuthConf: MjmlAuth = MjmlAuthFactory.builder()
                 .withMemoryCredentials()
-                .mjmlCredentials("c49481d5-fe08-4819-bab8-26db50b9d01a", "dc2f0033-679d-4fb6-9dc6-5784bd5d6f2c")
+                .mjmlCredentials(appId,secretKey)
                 .build()
-
+        //print("mjml key")
+        //print(env?.getProperty("mjml.userid"))
         val mjmlService: MjmlService = MjmlRestService(memoryAuthConf)
 
 

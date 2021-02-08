@@ -47,7 +47,7 @@ class ServiceTest {
     @Test
     fun testUserLocation(){
         val paidQuery = "{\n" +
-                "        aggregate: \"payment\",\n" +
+                "        aggregate: \"Payments\",\n" +
                 "        pipeline: [\n" +
                 "\n" +
                 "            {\n" +
@@ -80,11 +80,11 @@ class ServiceTest {
         result["cursor"]=doc
         Mockito.`when`(dao?.executeCommand(paidQuery)).thenReturn(result)
         val nonPaidQuery = "{\n" +
-                "    aggregate: \"quotes\",\n" +
+                "    aggregate: \"Quotes\",\n" +
                 "    pipeline: [\n" +
                 "        {\n" +
                 "            \"\$lookup\": {\n" +
-                "                \"from\": \"payment\",\n" +
+                "                \"from\": \"Payments\",\n" +
                 "                \"localField\": \"category\",\n" +
                 "                \"foreignField\": \"category\",\n" +
                 "                \"as\": \"category\"\n" +
@@ -92,7 +92,7 @@ class ServiceTest {
                 "            ,\n" +
                 "\n" +
                 "            \"\$lookup\": {\n" +
-                "                \"from\": \"payment\",\n" +
+                "                \"from\": \"Payments\",\n" +
                 "                \"localField\": \"product\",\n" +
                 "                \"foreignField\": \"product\",\n" +
                 "                \"as\": \"product\"\n" +
@@ -102,7 +102,7 @@ class ServiceTest {
                 "                \"localField\": \"formData.email\",\n" +
                 "                \"as\": \"email\",\n" +
                 "                \"foreignField\": \"email\",\n" +
-                "                \"from\": \"payment\"\n" +
+                "                \"from\": \"Payments\"\n" +
                 "            }\n" +
                 "        },\n" +
                 "        {\n" +
